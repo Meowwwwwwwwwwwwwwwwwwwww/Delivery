@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Moon, Clock, Sparkles, ShoppingBag, Phone, Lock, BadgePercent, Instagram, Send, Trash2, Minus, Plus, Wallet } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useMenu } from "./MenuContext";
+// ...
+
+// ...use menu.map(...) instead of MENU.map(...)
+// REMOVE this block:
+
 
 const CONFIG = {
   brand: {
@@ -7,7 +14,7 @@ const CONFIG = {
     tagline: "Jab duniya soti hai, hum serve karte hain.",
     phone: "+91-7302084789",
     whatsapp: "+91-7302084789",
-    insta: "@midnightmunch.in",
+    insta: "https://www.instagram.com/midnightmunch24_7/",
     cityTag: "Bhimtal & nearby",
   },
   theme: {
@@ -23,6 +30,7 @@ const CONFIG = {
     hero: true,
     features: true,
     signatures: true,
+    snacks: true,
     flashSale: true,
     moodMenu: true,
     confessionWall: true,
@@ -32,7 +40,7 @@ const CONFIG = {
   },
 };
 
-const MENU = [
+/*const MENU = [
   {
     category: "Signatures",
     items: [
@@ -65,7 +73,7 @@ const MENU = [
       { id: "hot-cocoa", name: "Hot Cocoa", price: 89, tag: "☕", img: "https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1200&auto=format&fit=crop", desc: "Comfort in a cup." },
     ],
   },
-];
+];*/
 
 // Custom Components (simplified versions)
 const Card = ({ children, className = "" }) => (
@@ -178,6 +186,8 @@ function formatINR(n) {
 }
 
 export default function MidnightMunchApp() {
+  const navigate = useNavigate();
+  const { menu } = useMenu();
   // All state and hooks inside the component
   const [cart, setCart] = useLocalList("mm_cart");
   const [mystery, setMystery] = useState(false);
@@ -285,8 +295,16 @@ export default function MidnightMunchApp() {
                 <Button size="lg" className="rounded-2xl" asChild>
                   <a href="#menu"><ShoppingBag className="w-4 h-4 mr-2" /> Browse Menu</a>
                 </Button>
-                <Button variant="outline" size="lg" className="rounded-2xl border-gray-600">
-                  <Instagram className="w-4 h-4 mr-2" /> {CONFIG.brand.insta}
+               <Button variant="outline" size="lg" className="rounded-2xl border-gray-600" asChild>
+            <a
+          href={CONFIG.brand.insta}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+            >
+            <Instagram className="w-4 h-4 mr-2" />
+               midnight_munch.in
+               </a>
                 </Button>
               </div>
               {CONFIG.sections.flashSale && (
@@ -312,84 +330,147 @@ export default function MidnightMunchApp() {
           </div>
         </section>
       )}
-
-      {/* Menu Grid */}
-      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl sm:text-3xl font-bold">Tonight's Menu</h2>
-          <NeonBadge>Mystery snack for ₹{CONFIG.offers.mysterySnackPrice}</NeonBadge>
-        </div>
-        <div className="mt-6 grid xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-2 space-y-8">
-            {MENU.map((block) => (
-              <div key={block.category}>
-                <h3 className="text-lg font-semibold opacity-90 mb-3">{block.category}</h3>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {block.items.map((it) => (
-                    <Card key={it.id} className="rounded-3xl border-gray-700 bg-gray-800 overflow-hidden flex flex-col">
-                      <img src={it.img} alt={it.name} className="w-full h-40 object-cover" />
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center justify-between">
-                          <span>{it.name}</span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-gray-700">{it.tag}</span>
-                        </CardTitle>
-                        <CardDescription className="text-sm opacity-80">{it.desc}</CardDescription>
-                      </CardHeader>
-                      <CardFooter className="mt-auto flex items-center justify-between">
-                        <div className="font-semibold">{formatINR(it.price)}</div>
-                        <Button size="sm" className="rounded-xl" onClick={() => addToCart(it)}>Add</Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+{/* Menu */}
+     <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <h2 className="text-2xl sm:text-3xl font-bold">Tonight's Menu</h2>
+      <Button
+        size="sm"
+        className="rounded-xl"
+        onClick={() => navigate("/dashboard/add-item")}
+      >
+        Add
+      </Button>
+    </div>
+    <NeonBadge>
+      Mystery snack for ₹{CONFIG.offers.mysterySnackPrice}
+    </NeonBadge>
+  </div>
+  <div className="mt-6 grid xl:grid-cols-3 gap-8">
+    <div className="xl:col-span-2 space-y-8">
+      {menu.map((block) => (
+        <div key={block.category}>
+          <h3 className="text-lg font-semibold opacity-90 mb-3">{block.category}</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {block.items.map((it) => (
+              <Card key={it.id} className="rounded-3xl border-gray-700 bg-gray-800 overflow-hidden flex flex-col">
+                <img src={it.img} alt={it.name} className="w-full h-40 object-cover" />
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span>{it.name}</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-700">{it.tag}</span>
+                  </CardTitle>
+                  <CardDescription className="text-sm opacity-80">{it.desc}</CardDescription>
+                </CardHeader>
+                <CardFooter className="mt-auto flex items-center justify-between">
+                  <div className="font-semibold">{formatINR(it.price)}</div>
+                  {/* You can add cart or other action buttons here if needed */}
+                </CardFooter>
+              </Card>
             ))}
           </div>
-
-          {/* Cart */}
-          <Card className="rounded-3xl border-gray-700 bg-gray-800 h-fit sticky top-24">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><ShoppingBag className="w-5 h-5" /> Your Cart</CardTitle>
-              <CardDescription className="text-sm">Checkout happens on WhatsApp.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {cart.length === 0 && <p className="text-sm opacity-70">Cart is empty. Add something tasty!</p>}
-              {cart.map((x) => (
-                <div key={x.id} className="flex items-center justify-between gap-2 p-2 rounded-xl border border-gray-700 bg-gray-800">
-                  <div>
-                    <p className="text-sm font-medium">{x.name}</p>
-                    <p className="text-xs opacity-60">{formatINR(x.price)} each</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="icon" variant="outline" className="rounded-xl h-8 w-8 border-gray-600" onClick={() => dec(x.id)}><Minus className="w-4 h-4" /></Button>
-                    <span className="text-sm w-6 text-center">{x.qty}</span>
-                    <Button size="icon" className="rounded-xl h-8 w-8" onClick={() => inc(x.id)}><Plus className="w-4 h-4" /></Button>
-                    <Button size="icon" variant="outline" className="rounded-xl h-8 w-8 border-gray-600" onClick={() => del(x.id)}><Trash2 className="w-4 h-4" /></Button>
-                  </div>
-                </div>
-              ))}
-              {cart.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" className="accent-fuchsia-500" checked={mystery} onChange={(e) => setMystery(e.target.checked)} />
-                    Add Mystery Snack (+₹{CONFIG.offers.mysterySnackPrice})
-                  </label>
-                  <div className="text-sm flex justify-between"><span>Subtotal</span><span>{formatINR(subtotal)}</span></div>
-                  {mystery && cart.length > 0 && <div className="text-sm flex justify-between"><span>Mystery</span><span>{formatINR(mysteryCost)}</span></div>}
-                  <div className="text-base font-semibold flex justify-between border-t border-gray-700 pt-2"><span>Total</span><span>{formatINR(total)}</span></div>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button variant="outline" className="rounded-2xl border-gray-600 w-full" onClick={clear} disabled={!cart.length}><Trash2 className="w-4 h-4 mr-2" /> Clear Cart</Button>
-              <Button className="rounded-2xl w-full" asChild disabled={!cart.length}>
-                <a href={waLink} target="_blank" rel="noreferrer"><Wallet className="w-4 h-4 mr-2" /> Order on WhatsApp</a>
-              </Button>
-            </CardFooter>
-          </Card>
         </div>
-      </section>
+      ))}
+    </div>
 
+    {/* Cart */}
+    <Card className="rounded-3xl border-gray-700 bg-gray-800 h-fit sticky top-24">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5" /> Your Cart
+        </CardTitle>
+        <CardDescription className="text-sm">
+          Checkout happens on WhatsApp.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {cart.length === 0 && (
+          <p className="text-sm opacity-70">Cart is empty. Add something tasty!</p>
+        )}
+        {cart.map((x) => (
+          <div
+            key={x.id}
+            className="flex items-center justify-between gap-2 p-2 rounded-xl border border-gray-700 bg-gray-800"
+          >
+            <div>
+              <p className="text-sm font-medium">{x.name}</p>
+              <p className="text-xs opacity-60">{formatINR(x.price)} each</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                className="rounded-xl h-8 w-8 border-gray-600"
+                onClick={() => dec(x.id)}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span className="text-sm w-6 text-center">{x.qty}</span>
+              <Button
+                size="icon"
+                className="rounded-xl h-8 w-8"
+                onClick={() => inc(x.id)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="rounded-xl h-8 w-8 border-gray-600"
+                onClick={() => del(x.id)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {cart.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="accent-fuchsia-500"
+                checked={mystery}
+                onChange={(e) => setMystery(e.target.checked)}
+              />
+              Add Mystery Snack (+₹{CONFIG.offers.mysterySnackPrice})
+            </label>
+            <div className="text-sm flex justify-between">
+              <span>Subtotal</span>
+              <span>{formatINR(subtotal)}</span>
+            </div>
+            {mystery && cart.length > 0 && (
+              <div className="text-sm flex justify-between">
+                <span>Mystery</span>
+                <span>{formatINR(mysteryCost)}</span>
+              </div>
+            )}
+            <div className="text-base font-semibold flex justify-between border-t border-gray-700 pt-2">
+              <span>Total</span>
+              <span>{formatINR(total)}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex flex-col gap-2">
+        <Button
+          variant="outline"
+          className="rounded-2xl border-gray-600 w-full"
+          onClick={clear}
+          disabled={!cart.length}
+        >
+          <Trash2 className="w-4 h-4 mr-2" /> Clear Cart
+        </Button>
+        <Button className="rounded-2xl w-full" asChild disabled={!cart.length}>
+          <a href={waLink} target="_blank" rel="noreferrer">
+            <Wallet className="w-4 h-4 mr-2" /> Order on WhatsApp
+          </a>
+        </Button>
+      </CardFooter>
+    </Card>
+  </div>
+</section>
       {/* Confession Wall */}
       {CONFIG.sections.confessionWall && (
         <section id="confess" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
