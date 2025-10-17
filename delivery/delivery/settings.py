@@ -1,11 +1,24 @@
 import os
 from pathlib import Path
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent  # Delivery/delivery
+PROJECT_ROOT = BASE_DIR.parent                     # Delivery/
+STATIC_URL = '/static/'
+
+
+STATICFILES_DIRS = [
+                   
+                           # Django static
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key secret in production!
-SECRET_KEY = "django-insecure-CHANGE_THIS_TO_A_RANDOM_SECRET_KEY"
 
+SECRET_KEY = "django-insecure-CHANGE_THIS_TO_A_RANDOM_SECRET_KEY"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
@@ -14,6 +27,7 @@ AUTH_USER_MODEL = "users.User"
 
 # Application definition
 INSTALLED_APPS = [
+   
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -26,10 +40,19 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django_filters",
     "corsheaders",
+    'rest_framework.authtoken',
+    
+       
+
+
 
     # Your apps
+    
     "users",
+    "orders",
+    "restaurants",
     "delivery",
+    
 ]
 
 MIDDLEWARE = [
@@ -66,10 +89,15 @@ WSGI_APPLICATION = "delivery.wsgi.application"
 # Database (SQLite for dev)
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "Delivery",
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "localhost",  
+        "PORT": "5432",       
     }
 }
+
 
 # Password validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -84,9 +112,10 @@ USE_I18N = True
 USE_TZ = True
 
 # Static & media
-STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]  # for dev
-STATIC_ROOT = BASE_DIR / "staticfiles"    # for prod (collectstatic)
+
+
+
+ # for prod (collectstatic)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -94,12 +123,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # DRF settings
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+         'rest_framework.authentication.TokenAuthentication',
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
+         'rest_framework.permissions.IsAuthenticated',
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": [
@@ -117,9 +147,11 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
         "rest_framework.filters.SearchFilter",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # API docs
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Food Delivery API",
     "DESCRIPTION": "Local food delivery backend (restaurants, menus, orders)",
@@ -127,4 +159,9 @@ SPECTACULAR_SETTINGS = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "True") == "True"
+
+CORS_ALLOW_ALL_ORIGINS =  True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # your React dev server
+]
