@@ -1,37 +1,47 @@
 import React, { useState } from "react";
-import { loginUser } from "./api";
-import { useNavigate } from "react-router-dom";
+import api from "./api";
 
-export default function Login({ onLogin }) {
+
+
+export default function Login({ onAuthChange }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
-      const data = await loginUser(username, password);
-      localStorage.setItem("token", data.access);
-      onLogin(true); // update parent state
-      navigate("/"); // redirect to home page
+      const res = await api.post("/api/token/", { username, password });
+      const { access, refresh } = res.data;
+      localStorage.setItem("access_token", access);
+      localStorage.setItem("refresh_token", refresh);
+      onAuthChange(true);
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      console.error(err);
+      setError("Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <form onSubmit={handleSubmit}>
+    <div className="min-h-[100vh] flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-800">
+      <form
+        onSubmit={handleLogin}
+        className="bg-gray-900 p-8 rounded-xl shadow-2xl w-full max-w-sm space-y-6"
+      >
+        <h2 className="text-2xl font-bold text-white text-center">
+          Welcome Back!
+        </h2>
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="block w-full mb-2 p-2 border rounded text-black"
+          className="w-full p-3 rounded-lg bg-gray-800 text-white placeholder-gray-400"
           required
         />
         <input
@@ -39,14 +49,16 @@ export default function Login({ onLogin }) {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="block w-full mb-4 p-2 border rounded text-black"
+          className="w-full p-3 rounded-lg bg-gray-800 text-white placeholder-gray-400"
           required
         />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          className="bg-violet-600 text-white px-4 py-2 rounded"
+          disabled={loading}
+          className="w-full bg-pink-600 hover:bg-pink-700 py-3 rounded-lg font-semibold text-white"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
