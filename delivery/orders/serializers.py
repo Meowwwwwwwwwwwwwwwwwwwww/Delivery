@@ -1,55 +1,60 @@
-# delivery/orders/serializers.py
-
 from rest_framework import serializers
-from django.db import transaction
 from .models import Order, OrderItem, MenuItem
-from decimal import Decimal
+from django.db import transaction
 
-# Serializer for the items within the order request
+# Serializer for reading/listing OrderItem details
 class OrderItemSerializer(serializers.ModelSerializer):
-    # This field is for receiving data from the request (it's NOT a model field)
-    menu_item_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)   
-
+    total_price = serializers.ReadOnlyField() 
+    
     class Meta:
         model = OrderItem
-        fields = ['menu_item', 'quantity', 'menu_item_price']
-        # The 'price' field (the actual model field) will be set in the parent serializer's create method
+        fields = ['id', 'name', 'quantity', 'unit_price', 'total_price']
 
+# Serializer for the main Order model (Used for listing and creation)
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, write_only=True)
+    # This is the field the frontend sends in the POST request: [{id: 1, qty: 2}, ...]
+    cart_items = serializers.ListField(write_only=True)
+    
+    # This is the field returned in the response (nested OrderItems)
+    items = OrderItemSerializer(many=True, read_only=True)
+    
+    total_amount = serializers.ReadOnlyField() # Model property
     
     class Meta:
         model = Order
-        fields = ['id', 'items', 'created_at', 'total_price', 'user']
-        read_only_fields = ['id', 'created_at', 'total_price', 'user']
+        # Fields for reading/listing
+        fields = ['id', 'order_id', 'user', 'status', 'created_at', 'total_amount', 'delivery_charge', 'items', 'cart_items']
+        # The user, ID, and calculated fields are read-only
+        read_only_fields = ['id', 'order_id', 'user', 'status', 'created_at', 'total_amount', 'delivery_charge', 'items']
 
+    @transaction.atomic
+    def create(self, validated_data):
+        # 1. Pop the cart data from the request
+        cart_items_data = validated_data.pop('cart_items', [])
+        
+        # 2. Create the main Order object (user is passed via the ViewSet context)
+        order = Order.objects.create(**validated_data) # Status defaults to 'PENDING'
 
-def create(self, validated_data):
-    order_items_data = validated_data.pop('items')
-    user = self.context['request'].user
-    total_price = Decimal('0.00')
+        # 3. Process each item and create OrderItem snapshots
+        for item_data in cart_items_data:
+            menu_item_id = item_data.get('id')
+            quantity = item_data.get('qty')
+            
+            try:
+                # Retrieve the MenuItem to get the current price and name
+                menu_item = MenuItem.objects.get(pk=menu_item_id, is_available=True)
+            except MenuItem.DoesNotExist:
+                raise serializers.ValidationError(
+                    f"Menu item ID {menu_item_id} is not available."
+                )
 
-    with transaction.atomic():
-        order = Order.objects.create(user=user, total_price=0)
-
-        for item_data in order_items_data:
-            menu_item_pk = item_data.pop('menu_item')
-            menu_item_instance = MenuItem.objects.get(pk=menu_item_pk)
-
-            price_at_time_of_order = item_data.pop('menu_item_price', menu_item_instance.price)
-            quantity = item_data['quantity']
-
+            # 4. Create the OrderItem, recording the price/name snapshot
             OrderItem.objects.create(
                 order=order,
-                menu_item=menu_item_instance,
+                menu_item=menu_item,
+                name=menu_item.name,
                 quantity=quantity,
-                price=price_at_time_of_order
+                unit_price=menu_item.price, # Use the current DB price
             )
 
-            total_price += price_at_time_of_order * quantity
-
-        # Update total price
-        order.total_price = total_price
-        order.save()
-
-    return order
+        return order

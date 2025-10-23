@@ -18,6 +18,13 @@ const REGISTER_PATH = 'users/';
 const AUTH_TYPE = 'Bearer'; 
 // ==========================================
 
+// === WHATSAPP ORDER CONFIGURATION (NEW) ===
+// Changed to include India's country code '91'
+const WHATSAPP_NUMBER = '918218286398'; 
+// Note: Replace this placeholder with the actual QR code URL if you have one hosted.
+const QR_CODE_URL = 'https://i.imgur.com/your-payment-qr-code.png'; 
+// ==========================================
+
 // Order status list for mock data (used temporarily due to missing serializer fields)
 const MOCK_STATUSES = ['Preparing', 'Delivered', 'Cancelled'];
 
@@ -244,45 +251,38 @@ const fetchOrders = async () => {
 };
 
 /**
- * POST /orders/ - Places a new order (PROTECTED - uses apiFetch)
+ * DELETED: placeOrder (database saving logic)
  */
-const placeOrder = async (cart) => {
-  if (!isBaseUrlConfigured()) {
-    throw new Error("Configuration Error: Please update the BASE_URL constant in App.jsx.");
-  }
-  
-  const url = `${BASE_URL}/orders/`; 
-  
-  const orderItemsPayload = cart.map(item => ({
-      menu_item: item.id, 
-      quantity: item.qty,
-  }));
-  
-  const payload = {
-      items: orderItemsPayload
-  };
-  
-  console.log("Sending order payload to /orders/ for saving in PostgreSQL:", payload);
-  
-  const response = await apiFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  
-  return await response.json(); 
-};
 
 const placeOrderViaWhatsApp = (cart) => {
   const message = cart
     .map((x) => `${x.name} x ${x.qty} = ${formatINR(x.price * x.qty)}`)
     .join("\n");
   const subtotal = cart.reduce((sum, x) => sum + x.price * x.qty, 0);
-  const total = subtotal + 40; 
+  const deliveryCharge = cart.length > 0 ? 40 : 0;
+  const total = subtotal + deliveryCharge; 
 
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
-    `*Midnight Munch Order Summary*\n\n${message}\n\nDelivery Charge: ${formatINR(40)}\n*Total: ${formatINR(total)}*\n\n(Order sent via Midnight Munch App)`
-  )}`;
+  const whatsappMessage = `
+*--- 🌙 MIDNIGHT MUNCH ORDER ---*
+*Customer:* ${localStorage.getItem("mm_username") || "Guest"}
+
+*Order Details:*
+${message}
+
+*Summary:*
+Subtotal: ${formatINR(subtotal)}
+Delivery Charge: ${formatINR(deliveryCharge)}
+---
+*Total Amount: ${formatINR(total)}*
+
+*Payment Information:*
+Please pay the amount by scanning this QR code:
+${QR_CODE_URL}
+
+(This order is sent directly via WhatsApp. Please confirm with the attendant.)
+  `.trim(); 
+
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
   window.open(whatsappUrl, "_blank");
 };
 
@@ -538,25 +538,22 @@ const MainOrderInterface = ({ menu, setMenu, cart, setCart, orders, setOrders, l
     const deliveryCharge = cart.length > 0 ? 40 : 0;
     const total = subtotal + deliveryCharge;
 
-    // Place order handler - UPDATED SUCCESS MESSAGE HERE
+    // Place order handler - NOW ONLY WHATSAPP LOGIC
     const handlePlaceOrder = async () => {
         if (!cart.length) {
           setErrorModal("Your cart is empty! Add some delicious food first.");
           return;
         }
 
+        // NOTE: orderLoading is no longer strictly necessary but kept to avoid errors
         setOrderLoading(true); 
         try {
-          // 1. THIS IS WHERE THE ORDER IS SAVED TO POSTGRESQL VIA DJANGO API
-          const data = await placeOrder(cart); 
-          
-          // 2. Open WhatsApp for confirmation/payment
+          // Only perform the WhatsApp action
           placeOrderViaWhatsApp(cart); 
           setCart([]); 
           
-          // 3. UPDATED: Explicitly state the order is saved (Order ID from Django response)
-          setErrorModal(`*Order Saved!* Order ID: ${data.id}. Your order has been recorded in our system. A WhatsApp chat has opened for final payment/confirmation.`);
-          loadOrders(); 
+          setErrorModal(`*Order Sent!* Your order has been sent via WhatsApp to ${WHATSAPP_NUMBER}. Please complete payment using the QR link in the chat.`);
+          
         } catch (err) {
           const errorMessage = err.message || "Order failed. Check the console for details.";
           console.error("Place order failed:", err);
@@ -608,7 +605,7 @@ const MainOrderInterface = ({ menu, setMenu, cart, setCart, orders, setOrders, l
                         disabled={orderLoading || !isLoggedIn} 
                         className="w-full bg-violet-600 hover:bg-violet-700 py-3 rounded-xl mt-4 font-semibold text-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:bg-violet-800 disabled:cursor-wait"
                     >
-                        {orderLoading ? "Placing Order..." : <><Wallet className="w-5 h-5" /> Save Order & Chat</>}
+                        {orderLoading ? "Preparing Chat..." : <><Wallet className="w-5 h-5" /> Order via WhatsApp</>}
                     </button>
                     {!isLoggedIn && <p className="text-xs text-red-400 text-center mt-2">Log in to place your order!</p>}
                     </div>
@@ -616,7 +613,7 @@ const MainOrderInterface = ({ menu, setMenu, cart, setCart, orders, setOrders, l
                 )}
             </section>
 
-            {/* ORDERS SECTION */}
+            {/* ORDERS SECTION - Remains for history but is NOT essential for placing the WhatsApp order */}
             <section className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700/50">
                 <h2 className="text-xl font-semibold flex items-center gap-2 mb-4 text-yellow-400"><ClipboardList className="w-5 h-5" /> My Recent Orders</h2>
                 {isLoggedIn ? (
@@ -747,146 +744,206 @@ export default function App() {
   const [cart, setCart] = useLocalList("mm_cart");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false); // Used for menu loading
-  const [orderLoading, setOrderLoading] = useState(false); // Dedicated state for order fetching/placing
+  // NOTE: orderLoading is kept but is now mainly a visual indicator for WhatsApp prep
+  const [orderLoading, setOrderLoading] = useState(false); 
   const [errorModal, setErrorModal] = useState(
     !isBaseUrlConfigured() ? "🚨 **Configuration Required:** Please update the `BASE_URL` constant in the file to your actual Django backend URL to enable login and API calls." : null
   );
 
-  // Fetch menu on load (Menu is public)
-  useEffect(() => {
-    if (!isBaseUrlConfigured()) return;
+  // --- CALLBACKS FOR API FETCHING ---
 
-    setLoading(true);
-    fetchRestaurants()
-      .then((data) => setMenu(data))
-      .catch((err) => {
-        console.error("Error fetching menu:", err);
-        setErrorModal(`Failed to load menu: ${err.message}.`);
-      })
-      .finally(() => setLoading(false));
+  // Function to load the menu (public endpoint)
+  const loadMenu = useCallback(async () => {
+      setLoading(true);
+      try {
+          const fetchedMenu = await fetchRestaurants();
+          setMenu(fetchedMenu);
+      } catch (e) {
+          console.error("Failed to load menu:", e);
+          setErrorModal(`Failed to load menu: ${e.message}`);
+          setMenu([]); 
+      } finally {
+          setLoading(false);
+      }
   }, []);
 
-  // Load orders (memoized with useCallback)
+  // Function to load orders (protected endpoint)
+  // NOTE: Kept for display/historical purposes, but not used for placing the order now.
   const loadOrders = useCallback(async () => {
-    if (!isLoggedIn) return;
-    setOrderLoading(true); 
-    try {
-      const data = await fetchOrders();
-      setOrders(Array.isArray(data) ? data : []); 
-    } catch (err) {
-      console.error("Error fetching orders:", err);
-      if (err.message.includes("Forced logout")) {
-        // Handle forced logout from refreshToken failure
-        setIsLoggedIn(false);
-        setOrders([]);
-        setUsername(null); // Clear username on forced logout
-        localStorage.removeItem("mm_username");
-        setErrorModal("Session expired or token refresh failed. Please log in again.");
-        return;
+      if (!isLoggedIn) {
+          setOrders([]);
+          return;
       }
-      setErrorModal(`Failed to load orders: ${err.message}`);
-    } finally {
-      setOrderLoading(false); 
-    }
-  }, [isLoggedIn]);
-  
-  // Load orders on successful login or initial load if tokens exist
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadOrders();
-      setAuthView('login'); // Ensure the view is reset to 'login'
-    }
-  }, [isLoggedIn, loadOrders]);
+      setOrderLoading(true);
+      try {
+          const fetchedOrders = await fetchOrders();
+          setOrders(fetchedOrders);
+      } catch (e) {
+          if (e.message.includes("Forced logout")) {
+              handleLogout();
+              setErrorModal("Your session expired. Please log in again.");
+          } else {
+              console.error("Failed to load orders:", e);
+              setErrorModal(`Failed to load orders: ${e.message}`);
+          }
+          setOrders([]); 
+      } finally {
+          setOrderLoading(false);
+      }
+  }, [isLoggedIn]); 
 
+  // --- AUTH HANDLERS ---
+  
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    setAuthView('main');
+    setErrorModal("Welcome back! Menu loaded successfully.");
+    // Automatically load orders after successful login (for history)
+    loadOrders(); 
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token"); 
-    localStorage.removeItem("mm_username"); // Clear username
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("mm_username");
+    setIsLoggedIn(false);
+    setUsername(null);
+    setAuthView('login');
     setCart([]);
     setOrders([]);
-    setIsLoggedIn(false);
-    setUsername(null); // Clear username state
-    setErrorModal("You have been successfully logged out.");
+    setErrorModal("You have been logged out.");
   };
 
-  return (
-    <div className="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
-      
-      {errorModal && <Modal message={errorModal} onClose={() => setErrorModal(null)} />}
+  // --- EFFECT HOOKS ---
+  
+  // 1. Fetch menu on load (Menu is public)
+  useEffect(() => {
+    if (!isBaseUrlConfigured()) return;
+    loadMenu();
+  }, [loadMenu]);
 
-      <nav className="p-4 flex flex-col sm:flex-row justify-between items-center bg-gray-800 sticky top-0 z-20 shadow-xl border-b border-gray-700">
-        <h1 className="font-extrabold text-3xl flex items-center gap-2 text-violet-400">
-          <Moon className="w-6 h-6 fill-violet-400" /> Midnight Munch
-        </h1>
-        {isLoggedIn ? (
-            <div className="flex items-center gap-4 mt-3 sm:mt-0">
-                {/* Check the username state and fall back to 'Guest' if null */}
-                <span className="text-sm font-medium text-gray-300 bg-gray-700 px-3 py-1 rounded-full border border-violet-500/50">
-                    Welcome, <strong className="text-violet-400">{username || 'Guest'}</strong>!
-                </span>
-                <button 
-                    onClick={handleLogout} 
-                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                >
-                    Logout
-                </button>
-            </div>
-        ) : (
-            <div className="mt-3 sm:mt-0">
-                <button 
-                    onClick={() => {
-                        setAuthView('login');
-                        setErrorModal("Please log in to start ordering.");
-                    }}
-                    className="text-sm text-violet-400 hover:text-violet-300 font-semibold"
-                >
-                    Log In
-                </button>
-            </div>
-        )}
-      </nav>
+  // 2. Fetch orders when logged in status changes
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [isLoggedIn, loadOrders]); 
+  
+  
+  // --- RENDERING LOGIC ---
 
-      {/* Main Content Render */}
-      {!isLoggedIn ? (
-        <div className="flex flex-col items-center justify-center pt-8 flex-1">
-          {/* Show Login component */}
-          {authView === 'login' && (
-            <Login 
-              onLoginSuccess={() => setIsLoggedIn(true)} 
-              onSwitchToRegister={() => setAuthView('register')} 
-              setUsername={setUsername} // Pass the setter
-            />
-          )}
-          {/* Show Register component */}
-          {authView === 'register' && (
-            <Register 
-              onRegistrationSuccess={(message) => { // Sets success message and switches to login
-                setErrorModal(message);
-                setAuthView('login');
-              }} 
-              onSwitchToLogin={() => setAuthView('login')}
-            />
-          )}
-        </div>
-      ) : (
-        <MainOrderInterface 
-            menu={menu}
-            setMenu={setMenu}
-            cart={cart}
-            setCart={setCart}
-            orders={orders}
-            setOrders={setOrders}
-            loading={loading}
-            setLoading={setLoading}
-            orderLoading={orderLoading}
-            setOrderLoading={setOrderLoading}
-            setErrorModal={setErrorModal}
-            isLoggedIn={isLoggedIn}
-            loadOrders={loadOrders}
-            handleLogout={handleLogout}
+  const renderContent = () => {
+    if (isLoggedIn || authView === 'main') {
+      return (
+        <MainOrderInterface
+          menu={menu}
+          setMenu={setMenu}
+          cart={cart}
+          setCart={setCart}
+          orders={orders}
+          setOrders={setOrders}
+          loading={loading}
+          setLoading={setLoading}
+          orderLoading={orderLoading}
+          setOrderLoading={setOrderLoading}
+          setErrorModal={setErrorModal}
+          isLoggedIn={isLoggedIn}
+          loadOrders={loadOrders}
+          handleLogout={handleLogout}
         />
-      )}
+      );
+    }
+
+    if (authView === 'login') {
+      return (
+        <Login 
+          onLoginSuccess={handleLoginSuccess}
+          onSwitchToRegister={() => { setAuthView('register'); setErrorModal(null); }}
+          setUsername={setUsername}
+        />
+      );
+    }
+    
+    if (authView === 'register') {
+      return (
+        <Register
+          onRegistrationSuccess={(msg) => { setAuthView('login'); setErrorModal(msg); }}
+          onSwitchToLogin={() => { setAuthView('login'); setErrorModal(null); }}
+        />
+      );
+    }
+    
+    return null;
+  };
+  
+  return (
+    <div className="min-h-screen bg-gray-900 text-white font-sans">
+      
+      {/* HEADER (NAVBAR) */}
+      <header className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 shadow-md">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Moon className="w-7 h-7 text-violet-400" />
+            <span className="text-2xl font-extrabold tracking-tight text-white">
+              Midnight <span className="text-violet-400">Munch</span>
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {isLoggedIn && (
+                <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                    Hello, **{username || "User"}**!
+                </span>
+            )}
+
+            {isLoggedIn && (
+              <button 
+                onClick={handleLogout} 
+                className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Logout
+              </button>
+            )}
+            {!isLoggedIn && (
+                 <>
+                    <button 
+                      onClick={() => setAuthView('login')} 
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${authView === 'login' ? 'bg-violet-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                    >
+                      Login
+                    </button>
+                    <button 
+                      onClick={() => setAuthView('register')} 
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${authView === 'register' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                    >
+                      Sign Up
+                    </button>
+                 </>
+            )}
+            
+            {/* If the view is on login/register, show the main menu button */}
+            {(!isLoggedIn && (authView === 'login' || authView === 'register')) && (
+                 <button 
+                     onClick={() => setAuthView('main')} 
+                     className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors hidden sm:block"
+                 >
+                     View Menu
+                 </button>
+            )}
+
+          </div>
+        </nav>
+      </header>
+      
+      {/* MAIN CONTENT */}
+      <div className="max-w-7xl mx-auto">
+        {renderContent()}
+      </div>
+
+      {/* ERROR MODAL */}
+      {errorModal && <Modal message={errorModal} onClose={() => setErrorModal(null)} />}
     </div>
   );
 }
