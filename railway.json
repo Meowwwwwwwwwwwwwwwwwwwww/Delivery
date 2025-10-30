@@ -1,14 +1,17 @@
 {
   "$schema": "https://docs.railway.app/railway.schema.json",
-  "name": "Django-Stable-API",
+  "name": "Django-Final-Fix",
   "services": [
     {
       "name": "django-backend",
       "project": "api",
-      // Build phase: Install and run collectstatic/migrate
-      "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput",
-      // Start phase: Only run Gunicorn
-      "startCommand": "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+      // Build Phase: Only install dependencies. 
+      "buildCommand": "pip install -r requirements.txt",
+      
+      // Start Phase: This command runs in the Deploy step.
+      // It executes migration, collection of static files, and then starts Gunicorn.
+      // REPLACE 'config' with your actual Django project folder name!
+      "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
     }
   ],
   "dependencies": []
