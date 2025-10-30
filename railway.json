@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.railway.app/railway.schema.json",
-  "name": "Django-Production-API",
+  "name": "Django-API-Service",
   "services": [
     {
-      "name": "django-service",
+      "name": "django-backend",
       "project": "api",
-      "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
+      // Forces Railway to recognize this as a Python environment
+      "startCommand": "gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT",
+      "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
     }
   ],
   "dependencies": []
