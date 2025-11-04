@@ -6,7 +6,8 @@
       "name": "api",
       "project": "django-service",
       "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
+      "startCommand": "./start.sh"
+
     }
   ],
   "dependencies": []
