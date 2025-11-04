@@ -1,15 +1,17 @@
 {
-  "$schema": "https://docs.railway.app/railway.schema.json",
-  "name": "My-Django-API",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "Midnight-Munch-API",
   "services": [
     {
-      "name": "api",
+      "name": "web",
       "project": "django-service",
-      "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
+      
+      
+      "buildCommand": "pip install -r requirements.txt && bash ./build.sh",
+      
+     
+      "startCommand": "python delivery/manage.py migrate --no-input && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
     }
   ],
-  "dependencies": []
-
-  
+  "dependencies": {}
 }
