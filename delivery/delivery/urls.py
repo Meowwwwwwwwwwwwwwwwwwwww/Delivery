@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView 
+from django.views.generic import TemplateView
+from django.urls import re_path
 # Removed: from .views import home (Unresolved import)
 
 urlpatterns = [
@@ -19,12 +21,7 @@ urlpatterns = [
     # 4. Application URLs
     path("restaurants/", include("restaurants.urls")),
     path('orders/', include('orders.urls')), 
+    re_path(r"^.*$", TemplateView.as_view(template_name="index.html")),
+  
 
-    # 5. Djoser JWT URLs (Optional, as 3 covers it, but good to know)
-    # path('', include('djoser.urls.jwt')), 
-    
-    # Note on 'users.urls': The previous path('', include('users.urls')) 
-    # caused conflicts with Djoser's /users/ endpoint. If you have custom 
-    # user views, include them under a unique path like:
-    # path('app-users/', include('users.urls')),
 ]
