@@ -6,7 +6,7 @@ set -e
 # --- 1. Frontend Build ---
 echo "--- Starting React Frontend Build ---"
 # Change to the React app directory (assuming 'frontend')
-cd frontend
+cd frontend_build
 
 # Install Node dependencies
 npm install
