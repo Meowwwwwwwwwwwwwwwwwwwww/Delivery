@@ -1,23 +1,40 @@
-# Stage 1: Build frontend
+# ===============================
+# Stage 1: Build Frontend
+# ===============================
 FROM node:18 AS frontend-builder
-WORKDIR /app/frontend  # Consistent path
-COPY delivery/templates/package*.json ./  
+
+WORKDIR /app/frontend
+
+# Copy only package files first to leverage Docker cache
+COPY delivery/templates/package*.json ./
+
+# Install frontend dependencies
 RUN npm install
-COPY delivery/templates/ ./               
+
+# Copy the rest of frontend files
+COPY delivery/templates/ ./
+
+# Build the frontend
 RUN npm run build
 
+
+# ===============================
 # Stage 2: Backend
+# ===============================
 FROM python:3.12-slim
+
 WORKDIR /delivery
 
-# Install system dependencies (often needed for Python packages)
+# Install system dependencies needed for some Python packages
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install backend dependencies
+# Copy backend dependency file first (for caching)
 COPY requirements.txt ./
+
+# Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt gunicorn
 
@@ -27,9 +44,11 @@ COPY delivery/ ./delivery/
 # Copy frontend build into Django static files
 COPY --from=frontend-builder /app/frontend/build ./delivery/static/
 
-# Collect static files (fixed typo: collectstxatic → collectstatic)
+# Collect static files (fixed typo)
 RUN python delivery/manage.py collectstatic --no-input || echo "Collectstatic failed"
 
-# Expose port and run server
+# Expose port for container
 EXPOSE 8000
+
+# Run Django app using Gunicorn
 CMD ["gunicorn", "delivery.wsgi:application", "--bind", "0.0.0.0:8000"]
