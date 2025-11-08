@@ -3,14 +3,19 @@
   "name": "Midnight-Munch-API",
   "services": [
     {
+      "name": "frontend",
+      "project": "react-build",
+      "rootDirectory": "delivery/frontend",
+      "buildCommand": "npm install && npm run build"
+    },
+    {
       "name": "web",
       "project": "django-service",
+      "rootDirectory": "delivery", 
       
+      "buildCommand": "cp -r frontend/build/* backend_project/static/ && pip install -r requirements.txt && bash ../build.sh",
       
-      "buildCommand": "pip install -r requirements.txt && bash ./build.sh",
-      
-     
-      "startCommand": "python delivery/manage.py migrate --no-input && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
+      "startCommand": "python manage.py migrate --no-input && gunicorn backend_project.wsgi:application --bind 0.0.0.0:$PORT"
     }
   ],
   "dependencies": {}
