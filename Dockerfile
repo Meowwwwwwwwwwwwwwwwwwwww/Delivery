@@ -1,30 +1,35 @@
 # =========================
-# Stage 1: Build Frontend
+# FRONTEND BUILD STAGE
 # =========================
 FROM node:18 AS frontend-builder
 
 # Set working directory
-WORKDIR /delivery/templates
+WORKDIR /app/frontend
 
-# Copy only package files first (for caching npm install)
-COPY delivery/templates/package*.json ./
+# Copy package.json and package-lock.json
+COPY frontend/package*.json ./
 
-# Install frontend dependencies
+# Install dependencies
 RUN npm install
 
-# Copy all frontend files
-COPY delivery/templates/ ./
+# Copy the rest of the frontend files
+COPY frontend/ ./
 
-# Build frontend (assuming React/Vite/etc.)
+# Build the React app for production
 RUN npm run build
 
+
 # =========================
-# Stage 2: Backend (Python/Django)
+# BACKEND STAGE
 # =========================
 FROM python:3.12-slim AS backend
 
-# Set working directory
-WORKDIR /delivery
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set work directory
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -32,20 +37,23 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python requirements
-COPY requirements.txt ./
+# Copy Python dependencies file
+COPY delivery/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
-COPY delivery/ ./
+COPY delivery/ .
 
-# Copy built frontend into Django static folder
-COPY --from=frontend-builder /app/frontend/build /delivery/static/
+# Copy built frontend files from frontend-builder
+COPY --from=frontend-builder /app/frontend/build /app/staticfiles
 
-# Set environment variables (optional)
-ENV PYTHONUNBUFFERED=1
+# Collect static files (optional if STATICFILES_DIRS is configured)
+RUN python manage.py collectstatic --noinput || true
 
-# Run Django migrations and start server (for Railway)
-CMD ["sh", "-c", "python manage.py migrate --no-input && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"]
+# Expose port
+EXPOSE 8000
+
+# Start the Django app with Gunicorn
+CMD ["gunicorn", "delivery.wsgi:application", "--bind", "0.0.0.0:8000"]
