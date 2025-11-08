@@ -4,7 +4,7 @@
 FROM node:18 AS frontend-builder
 
 # Set working directory
-WORKDIR /app/frontend
+WORKDIR /delivery/templates
 
 # Copy only package files first (for caching npm install)
 COPY delivery/templates/package*.json ./
