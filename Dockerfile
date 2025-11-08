@@ -20,17 +20,17 @@ ENV PORT=8000
 WORKDIR /app
 
 # Install dependencies
-COPY backend_project/requirements.txt .
+COPY delivery/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copy backend source code
-COPY backend_project/ ./backend_project/
+COPY delivery/ ./delivery/
 
 # Copy built frontend files into Django static
 COPY --from=frontend-builder /app/frontend/build ./backend_project/static/
 
 # Collect static files (optional, safe to fail)
-WORKDIR /app/backend_project
+WORKDIR /app/delivery
 RUN python3 manage.py collectstatic --noinput || true
 
 EXPOSE 8000
