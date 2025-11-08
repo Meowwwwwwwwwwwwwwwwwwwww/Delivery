@@ -5,27 +5,29 @@ set -e
 
 # --- 1. Frontend Build ---
 echo "--- Starting React Frontend Build ---"
-# Change to the React app directory (assuming 'frontend')
-cd frontend_build
 
-# Install Node dependencies
+# FIX 1: Change to the correct React source directory: 'delivery/frontend'
+cd delivery/frontend_build
+
+echo "--- Installing Node dependencies ---"
 npm install
 
-# Build the React app (outputs to ./build)
+echo "--- Building React app ---"
+# This creates the 'build' folder *inside* 'delivery/frontend'
 npm run build
 
-# Change back to the repository root
-cd ..
+# FIX 2: Change back to the repository root (two levels up)
+cd ../..
 
 # --- 2. Backend Setup ---
 echo "--- Setting up Django Backend ---"
 # Create a location for static files (React build output) in the Django project root
-mkdir -p backend_project/static
+# Using the full path 'delivery/backend_project/static'
+mkdir -p delivery/backend_project/static
 
 # Move the React build output into a Django static folder for WhiteNoise to serve
-# IMPORTANT: Adjust 'backend_project' if your Django project name is different.
-# NOTE: The 'build' directory name comes from 'react-scripts build' default output.
-cp -r frontend/build/* backend_project/static/
+# FIX 3: Source is now 'delivery/frontend/build' and destination includes 'delivery'
+cp -r delivery/frontend/build/* delivery/backend_project/static/
 
 echo "--- Build successful. Static files prepared. ---"
 
