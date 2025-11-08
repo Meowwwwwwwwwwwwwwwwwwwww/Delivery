@@ -1,38 +1,28 @@
-
-FROM python:3.12-slim
-
+# Stage 1: Build frontend
 FROM node:18 AS frontend-builder
 WORKDIR /app/frontend
-COPY frontend_build/package*.json ./
+COPY frontend_build/package*.json ./  # Make sure this path exists
 RUN npm install
-COPY frontend_build/ .
+COPY frontend_build/ ./               # Copy frontend source
 RUN npm run build
 
-# ===============================
-# Stage 2: Django backend
-# ===============================
+# Stage 2: Backend
 FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
-
 WORKDIR /app
 
-# Install dependencies
-COPY delivery/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
+# Install backend dependencies
+COPY requirements.txt ./
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt gunicorn
 
-# Copy backend source code
-COPY delivery/ ./delivery/
+# Copy backend project
+COPY delivery/ ./delivery/           # Use your actual folder name
 
-# Copy built frontend files into Django static
-COPY --from=frontend-builder /app/frontend/build ./backend_project/static/
+# Copy frontend build into Django static files
+COPY --from=frontend-builder /app/frontend/build ./delivery/static/
 
-# Collect static files (optional, safe to fail)
-WORKDIR /app/delivery
-RUN python3 manage.py collectstatic --noinput || true
+# Collect static files (optional)
+RUN python delivery/manage.py collectstatic --no-input || echo "Collectstatic failed"
 
-EXPOSE 8000
-
+# Run server
 CMD ["gunicorn", "delivery.wsgi:application", "--bind", "0.0.0.0:8000"]
