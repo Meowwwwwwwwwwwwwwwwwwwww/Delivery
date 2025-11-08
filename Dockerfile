@@ -1,9 +1,9 @@
 # Stage 1: Build frontend
 FROM node:18 AS frontend-builder
 WORKDIR /delivery/frontend_build
-COPY templates/package*.json ./  
+COPY delivery/templates/package*.json ./  
 RUN npm install
-COPY templates/ ./               
+COPY delivery/templates/ ./               
 RUN npm run build
 
 # Stage 2: Backend
