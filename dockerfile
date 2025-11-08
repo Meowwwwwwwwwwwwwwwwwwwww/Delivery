@@ -1,6 +1,6 @@
-# ===============================
-# Stage 1: Build React frontend
-# ===============================
+
+FROM python:3.12-slim
+
 FROM node:18 AS frontend_builder
 WORKDIR /app/frontend
 COPY frontend_build/package*.json ./
