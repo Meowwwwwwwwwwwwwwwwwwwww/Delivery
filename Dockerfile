@@ -1,47 +1,27 @@
-## Stage 1: Frontend Builder
-# This stage builds your static frontend assets (e.g., using Node/NPM)
+# Stage 1: Build frontend
 FROM node:18 AS frontend-builder
-WORKDIR /app/frontend
-
-# Copy package files first for better caching
-COPY delivery/frontend_build/package*.json ./
+WORKDIR /delivery/frontend_build
+COPY frontend_build/package*.json ./  # Make sure this path exists
 RUN npm install
-
-# Copy source code and build
-COPY delivery/frontend_build/ .
+COPY frontend_build/ ./               # Copy frontend source
 RUN npm run build
-# The compiled assets are now typically in /app/frontend/dist or /app/frontend/build
 
----
-
-## Stage 2: Django Backend (Final Image)
+# Stage 2: Backend
 FROM python:3.12-slim
-
-# Environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
-
-# Set the primary working directory for the Django application
-WORKDIR /app
+WORKDIR /delivery
 
 # Install backend dependencies
-# Correction 1: requirements.txt is inside the delivery folder
-COPY delivery/requirements.txt . 
+COPY delivery/requirements.txt ./
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
+RUN pip install -r requirements.txt gunicorn
 
-# Copy backend source code
-# Correction 2: Copy the delivery folder content into the 'delivery' folder within the container
-COPY delivery/ ./delivery/
+# Copy backend project
+COPY delivery/ ./delivery/          
+# Copy frontend build into Django static files
+COPY --from=frontend-builder /app/frontend/build ./delivery/static/
 
-# Copy built frontend files into Django static
-# NOTE: The path depends on your frontend build output (usually 'dist' or 'build')
-# Assuming 'build' is the output folder from the npm run build step in Stage 1
-COPY --from=frontend-builder /app/frontend/build /app/delivery/static/
+# Collect static files (optional)
+RUN python delivery/manage.py collectstxatic --no-input || echo "Collectstatic failed"
 
-# Collect static files and define startup command
-# Since your manage.py is in 'delivery/', commands must reference that path
-RUN python delivery/manage.py collectstatic --noinput
-
-# Run the application using Gunicorn
+# Run server
 CMD ["gunicorn", "delivery.wsgi:application", "--bind", "0.0.0.0:8000"]
