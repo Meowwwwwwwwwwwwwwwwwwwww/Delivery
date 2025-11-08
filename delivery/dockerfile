@@ -1,27 +1,25 @@
-# 1. Use an official Python base image
-FROM python:3.11-slim
+# ---- Stage 1: Build React frontend ----
+FROM node:18 as frontend-builder
 
-# 2. Set the working directory inside the container
-WORKDIR /usr/src/app
+WORKDIR /app
+COPY delivery/frontend_build ./frontend_build
+RUN cd frontend_build && npm install && npm run build
 
-# 3. Set the environment variable for Gunicorn/Django to bind to the port
-ENV PORT 8000
-ENV PYTHONUNBUFFERED 1
+# ---- Stage 2: Build Django backend ----
+FROM python:3.11
 
-# 4. Copy and install dependencies
-COPY requirements.txt ./
+WORKDIR /app
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Copy the rest of the application code
-COPY . .
+# Copy Django project
+COPY delivery ./delivery
 
-# 6. Run collectstatic and migrations during the build to ensure they only happen once
-RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate --noinput
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder /app/frontend_build/build ./delivery/backend_project/static/
 
-# 7. Expose the port (Gunicorn will listen on this port)
+# Collect static files and run gunicorn
+RUN python delivery/manage.py collectstatic --noinput
+
 EXPOSE 8000
-
-# 8. Define the command to run when the container starts
-# REPLACE 'config' with your actual Django project folder name!
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "delivery.wsgi:application", "--bind", "0.0.0.0:8000"]
