@@ -1,6 +1,6 @@
 # Stage 1: Build frontend
 FROM node:18 AS frontend-builder
-WORKDIR /app/frontend
+WORKDIR /delivery/frontend_build
 COPY frontend_build/package*.json ./  # Make sure this path exists
 RUN npm install
 COPY frontend_build/ ./               # Copy frontend source
