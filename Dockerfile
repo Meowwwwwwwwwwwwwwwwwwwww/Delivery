@@ -8,7 +8,7 @@ RUN npm run build
 
 # Stage 2: Backend
 FROM python:3.12-slim
-WORKDIR /app
+WORKDIR /delivery
 
 # Install backend dependencies
 COPY delivery/requirements.txt ./
