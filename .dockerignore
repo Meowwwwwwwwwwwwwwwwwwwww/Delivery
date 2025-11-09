@@ -1,8 +1,0 @@
-venv
-__pycache__
-*.pyc
-node_modules
-frontend_build/node_modules
-.git
-.gitignore
-Dockerfile
