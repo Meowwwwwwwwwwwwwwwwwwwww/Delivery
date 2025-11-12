@@ -1,8 +1,14 @@
 #!/bin/bash
-set -e
+set -e  # exit immediately on error
 
-apt-get update && apt-get install -y python3 python3-pip
-python3 -m pip install -r delivery/backend_project/requirements.txt gunicorn
+echo "🔧 Installing dependencies..."
+pip install --no-cache-dir -r delivery/requirements.txt gunicorn
 
-python3 delivery/manage.py migrate --no-input
+echo "📦 Running migrations..."
+python delivery/manage.py migrate --no-input
+
+echo "🧹 Collecting static files..."
+python delivery/manage.py collectstatic --no-input
+
+echo "🚀 Starting Gunicorn server..."
 gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT

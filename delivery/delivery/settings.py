@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import dj_database_url
 from corsheaders.defaults import default_headers
 from datetime import timedelta # Imported here to be available for SIMPLE_JWT
 
@@ -89,15 +88,16 @@ WSGI_APPLICATION = "delivery.wsgi.application"
 # -----------------------------
 # 4. DATABASE
 # -----------------------------
-#DATABASES = {
- #   "default": {
-  #      "ENGINE": "django.db.backends.postgresql",
-   #     "NAME": "Delivery",
-    #    "USER": "postgres",
-    #    "PASSWORD": "postgres",
-     #   "HOST": "localhost",
-      #  "PORT": "5432",
-   #}}
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "Delivery",
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -216,15 +216,3 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-
-
-# ... other settings
-
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
