@@ -4,12 +4,12 @@ import { Moon, ShoppingBag, Trash2, Minus, Plus, Wallet, LogIn, Utensils, Clipbo
 // --- 1. API CONFIGURATION AND UTILITIES ---
 
 // IMPORTANT: === YOU MUST SET THIS VALUE ===
-const BASE_URL_PLACEHOLDER = 'http://localhost:8000'; 
+const BASE_URL_PLACEHOLDER = 'https://delivery-production-252e.up.railway.app/'; 
 const BASE_URL = BASE_URL_PLACEHOLDER; 
 // ===========================================
 
 // Function to check if the BASE_URL has been configured
-const isBaseUrlConfigured = () => BASE_URL !== 'https://YOUR-DJANGO-BACKEND-URL-HERE'; // Note: Checking against the original placeholder for initial setup error
+const isBaseUrlConfigured = () => BASE_URL !== 'https://delivery-production-252e.up.railway.app/'; // Note: Checking against the original placeholder for initial setup error
 
 // === CONFIGURATION UPDATED FOR SIMPLE JWT ===
 const LOGIN_PATH = 'api/token/'; 
