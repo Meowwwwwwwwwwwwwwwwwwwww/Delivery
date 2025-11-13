@@ -20,6 +20,6 @@
     }
   },
   "deploy": {
-    "startCommand": "python delivery/manage.py migrate --no-input && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
+    "startCommand": "python delivery/manage.py migrate --no-input && cd delivery && gunicorn delivery.wsgi:application --bind 0.0.0.0:$PORT"
   }
 }
