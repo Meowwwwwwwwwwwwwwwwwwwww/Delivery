@@ -86,16 +86,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "delivery.wsgi.application"
 
 # -----------------------------
-# 4. DATABASE
+# 4. SQLITE DATABASE
 # -----------------------------
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Delivery",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "localhost",
-        "PORT": "5432",
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'mydatabase', # This is where you put the name of the db file. 
+                 # If one doesn't exist, it will be created at migration time.
     }
 }
 
