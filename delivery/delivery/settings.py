@@ -215,6 +215,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 CSRF_TRUSTED_ORIGINS = [
        "https://delivery-b5az.vercel.app",
-       "delivery-production-252e.up.railway.app"
+       "https://delivery-production-252e.up.railway.app"
 
 ]
