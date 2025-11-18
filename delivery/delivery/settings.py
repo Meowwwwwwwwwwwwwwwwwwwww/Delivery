@@ -252,7 +252,18 @@ CORS_ALLOW_CREDENTIALS = True
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 CSRF_TRUSTED_ORIGINS = [
-       "https://delivery-b5az.vercel.app",
-       "https://delivery-production-252e.up.railway.app"
-
+    "https://midnightmunch.in",
+    "https://www.midnightmunch.in",
+    "https://*.railway.app",
+    "https://*.up.railway.app",
 ]
+ALLOWED_HOSTS = [
+    "midnightmunch.in",
+    "www.midnightmunch.in",
+    ".railway.app",
+    ".up.railway.app",
+    "localhost",
+    "127.0.0.1",
+]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
