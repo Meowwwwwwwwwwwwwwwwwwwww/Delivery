@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from corsheaders.defaults import default_headers
 from datetime import timedelta 
+import dj_database_url
 # Use a library for robust environment management, like python-decouple or environ
 # For simplicity, we'll stick to os.environ for demonstration.
 
@@ -126,17 +127,16 @@ WSGI_APPLICATION = "delivery.wsgi.application"
  # Import at the top
 
 # ... inside DATABASES ...
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'delivery'),
-        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-    }
-}
+# settings.py (Check this in your committed code)
 
+# ...
+DATABASES = {
+    'default': dj_database_url.config(
+        # This line must be present to read the Railway ENV variable
+        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'), 
+        conn_max_age=600,
+    )
+}
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
