@@ -4,7 +4,7 @@ import { Moon, ShoppingBag, Trash2, Minus, Plus, Wallet, LogIn, Utensils, Clipbo
 // --- 1. API CONFIGURATION AND UTILITIES ---
 
 // IMPORTANT: === YOU MUST SET THIS VALUE ===
-const BASE_URL_PLACEHOLDER ="https://delivery-production-252e.up.railway.app";
+const BASE_URL_PLACEHOLDER ="https://www.midnightmunch.in";
 
 
 
