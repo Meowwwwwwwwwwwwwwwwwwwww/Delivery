@@ -1,16 +1,40 @@
 import os
 from pathlib import Path
 from corsheaders.defaults import default_headers
-from datetime import timedelta # Imported here to be available for SIMPLE_JWT
+from datetime import timedelta 
+# Use a library for robust environment management, like python-decouple or environ
+# For simplicity, we'll stick to os.environ for demonstration.
+
+# --- Environment Setup (CRITICAL CHANGE) ---
+# Fetch the SECRET_KEY from an environment variable. 
+# Only use the hardcoded default for local development.
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", 
+    "django-insecure-CHANGE_THIS_TO_A-RANDOM-SECRET-KEY" # ⚠️ SAFE DEFAULT for Dev Only
+) 
+
+# Set DEBUG based on an environment variable, default to True for local development
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -----------------------------
 # 1. CORE SECURITY & ENVIRONMENT
 # -----------------------------
-SECRET_KEY = "django-insecure-CHANGE_THIS_TO_A_RANDOM_SECRET_KEY"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+if not DEBUG:
+    # ⚠️ PRODUCTION MODE: Must list exact allowed hosts (domains and subdomains)
+    # Get hosts from an environment variable (e.g., "host1.com,host2.com")
+    try:
+        ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",")
+    except Exception:
+         # Fallback to specific URLs if ENV var is missing, but best to use ENV
+         ALLOWED_HOSTS = [
+             "delivery-b5az.vercel.app",
+             "delivery-production-252e.up.railway.app"
+         ]
+else:
+    # DEVELOPMENT MODE
+    ALLOWED_HOSTS = ["*"] 
 
 # Custom user model
 AUTH_USER_MODEL = "users.User"
@@ -33,6 +57,9 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django_filters",
     "djoser",
+    
+    # ⚠️ Recommended for cloud storage if not using WhiteNoise for media
+    # "storages", 
 
     # Your apps
     "users",
@@ -42,29 +69,34 @@ INSTALLED_APPS = [
 ]
 
 # -----------------------------
-# 3. MIDDLEWARE
+# 3. MIDDLEWARE (WhiteNoise moved up for performance)
 # -----------------------------
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # must be high
+    "corsheaders.middleware.CorsMiddleware", 
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware", # ⬆️ Moved up: Recommended by WhiteNoise docs
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    
 ]
 
 ROOT_URLCONF = "delivery.urls"
 
 
+# -----------------------------
+# Static & Media (Note on Cloud Storage)
+# -----------------------------
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "frontend_build" / "assets"]  # React JS/CSS
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# ⚠️ For production, consider using django-storages and S3/GCS for MEDIA
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / "media" 
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 TEMPLATES = [
@@ -86,13 +118,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "delivery.wsgi.application"
 
 # -----------------------------
-# 4. SQLITE DATABASE
+# 4. DATABASE (Use a robust DB in production)
 # -----------------------------
+# ⚠️ If using a production DB (like Postgres), you should use a library 
+# like dj-database-url to parse the ENV var.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'mydatabase', # This is where you put the name of the db file. 
-                 # If one doesn't exist, it will be created at migration time.
+        'NAME': 'mydatabase', 
     }
 }
 
@@ -108,9 +141,6 @@ TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
-# Static & Media
-
-
 # -----------------------------
 # 5. Django REST Framework (DRF)
 # -----------------------------
@@ -118,10 +148,8 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    # Keeps IsAuthenticated globally. Djoser will typically handle permissions 
-    # for /users/ registration automatically (AllowAny).
     "DEFAULT_PERMISSION_CLASSES": (
-       "rest_framework.permissions.AllowAny",
+       "rest_framework.permissions.AllowAny", # Fine for a public API, restrict in views
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": [
@@ -142,12 +170,10 @@ REST_FRAMEWORK = {
 }
 
 # -----------------------------
-# 6. DJOSER CONFIGURATION (CRITICAL for User Endpoints)
+# 6. DJOSER CONFIGURATION
 # -----------------------------
 DJOSER = {
-    # Ensures password confirmation is required during registration
     'USER_CREATE_PASSWORD_RETYPE': False, 
-    # Use JWT for token management
     'TOKEN_MODEL': None, 
     'SERIALIZERS': {
         'user_create': 'djoser.serializers.UserCreateSerializer',
@@ -156,14 +182,15 @@ DJOSER = {
 }
 
 # -----------------------------
-# 7. SIMPLE JWT CONFIGURATION
+# 7. SIMPLE JWT CONFIGURATION (CRITICAL CHANGE)
 # -----------------------------
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    # ⚠️ Security Fix: SIGNING_KEY must be a secret. Using DJANGO_SECRET_KEY as a fallback.
+    "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY", SECRET_KEY), 
     "ROTATE_REFRESH_TOKENS": False,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": "YOUR_SUPER_SECRET_KEY", # !!! REPLACE WITH A REAL, SECRET KEY !!!
     "VERIFYING_KEY": None,
     "AUDIENCE": None,
     "ISSUER": None,
@@ -189,7 +216,7 @@ SIMPLE_JWT = {
 
 
 # -----------------------------
-# 8. CORS & API Docs
+# 8. CORS & API Docs (CRITICAL CHANGE)
 # -----------------------------
 
 # API docs
@@ -201,18 +228,21 @@ SPECTACULAR_SETTINGS = {
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    
     "https://delivery-b5az.vercel.app",
 ]
+# ⚠️ Security Fix: Use DEBUG to control all-origins access. 
+# Only True in development, False in production.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
     "content-type",
 ]
 
 CORS_ALLOW_CREDENTIALS = True 
-CORS_ALLOW_ALL_ORIGINS = True
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 CSRF_TRUSTED_ORIGINS = [
        "https://delivery-b5az.vercel.app",
        "https://delivery-production-252e.up.railway.app"
