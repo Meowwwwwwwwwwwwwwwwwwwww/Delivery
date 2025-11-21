@@ -237,7 +237,7 @@ SPECTACULAR_SETTINGS = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "https://delivery-b5az.vercel.app",
-    "https://themidnightmunch.shop/"]
+]
 # ⚠️ Security Fix: Use DEBUG to control all-origins access. 
 # Only True in development, False in production.
 CORS_ALLOW_ALL_ORIGINS = DEBUG
