@@ -237,6 +237,7 @@ SPECTACULAR_SETTINGS = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "https://delivery-b5az.vercel.app",
+    "themidnightmunch.shop"
 ]
 # ⚠️ Security Fix: Use DEBUG to control all-origins access. 
 # Only True in development, False in production.
@@ -252,12 +253,14 @@ CORS_ALLOW_CREDENTIALS = True
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 CSRF_TRUSTED_ORIGINS = [
+    "themidnightmunch.shop"
     "https://midnightmunch.in",
     "https://www.midnightmunch.in",
     "https://*.railway.app",
     "https://*.up.railway.app",
 ]
 ALLOWED_HOSTS = [
+   " themidnightmunch.shop"
     "midnightmunch.in",
     "www.midnightmunch.in",
     ".railway.app",
