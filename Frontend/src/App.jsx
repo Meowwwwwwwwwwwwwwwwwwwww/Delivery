@@ -36,6 +36,7 @@ const MOCK_STATUSES = ['Preparing', 'Delivered', 'Cancelled'];
 // Format INR currency
 const formatINR = (n) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
 // new. 
+//neww
 
 // --- JWT DECODE UTILITY (NEW) ---
 /**
