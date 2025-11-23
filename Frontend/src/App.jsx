@@ -25,7 +25,7 @@ const AUTH_TYPE = 'Bearer';
 
 // === WHATSAPP ORDER CONFIGURATION (NEW) ===
 // Changed to include India's country code '91'
-const WHATSAPP_NUMBER = '918218286398'; 
+const WHATSAPP_NUMBER = '919286857450'; 
 // Note: Replace this placeholder with the actual QR code URL if you have one hosted.
 const QR_CODE_URL = '$$\text{upi://pay?pa=pawangarla1998-1@okhdfcbank}$$'; 
 // ==========================================
